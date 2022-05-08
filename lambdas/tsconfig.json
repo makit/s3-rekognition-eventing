@@ -1,0 +1,15 @@
+{
+  "compileOnSave": true,
+  "compilerOptions": {
+    "outDir": "./built",
+    "target": "es2020",
+    "moduleResolution": "node",
+    "module": "commonjs",
+    "types": ["jest", "node"],
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+  },
+  "exclude": [
+    "node_modules",
+  ]
+}

@@ -1,0 +1,16 @@
+
+# Visual Studio Code
+.vscode
+
+# Build results
+lambdas/built/
+
+# node / typescript
+*.js
+!jest.config.js
+*.d.ts
+node_modules
+
+# CDK asset staging directory
+.cdk.staging
+cdk.out
