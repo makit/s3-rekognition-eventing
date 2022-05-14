@@ -1,43 +1,5 @@
 import * as aws from 'aws-sdk';
-
-export interface S3EventNotificationS3RecordBucket {
-  name: string;
-  arn: string;
-}
-
-export interface S3EventNotificationS3RecordObject {
-  key: string;
-}
-
-export interface S3EventNotificationS3Record {
-  bucket: S3EventNotificationS3RecordBucket;
-  object: S3EventNotificationS3RecordObject;
-}
-
-export interface S3EventNotificationRecord {
-  s3: S3EventNotificationS3Record;
-}
-
-export interface S3EventNotification {
-  Records: S3EventNotificationRecord[];
-}
-
-export interface ProcessFileRecord {
-  messageId: string;
-  body: string;
-}
-
-export interface ProcessFileEvent {
-  Records: ProcessFileRecord[];
-}
-
-export interface ProcessFileResponseFailure {
-  itemIdentifier: string;
-}
-
-export interface ProcessFileResponse {
-  batchItemFailures: ProcessFileResponseFailure[];
-}
+import { SQSEvent, S3Event, S3EventRecord, SQSBatchResponse } from 'aws-lambda';
 
 export interface FileResult {
   labels: string[];
@@ -54,6 +16,10 @@ class ProcessFile {
   constructor() {
     const { MinConfidence, MaxLabels, EventBusName, DetailType } = process.env;
 
+    if (!MinConfidence || !MaxLabels || !EventBusName || !DetailType) {
+      throw new Error('Missing environment variables');
+    }
+
     this._minConfidence = Number(MinConfidence);
     this._maxLabels = Number(MaxLabels);
     this._eventBusName = EventBusName;
@@ -64,14 +30,14 @@ class ProcessFile {
     console.info('Initialised');
   }
 
-  processSingleFile = async (record: S3EventNotificationS3Record): Promise<FileResult> => {
+  processSingleFile = async (record: S3EventRecord): Promise<FileResult> => {
     console.info('Processing Record', JSON.stringify(record, null, 2));
 
     const params : aws.Rekognition.DetectLabelsRequest = {
       Image: {
           S3Object: {
-            Bucket: record.bucket.name,
-            Name: record.object.key,
+            Bucket: record.s3.bucket.name,
+            Name: record.s3.object.key,
           },
         },
       MinConfidence: this._minConfidence,
@@ -81,10 +47,12 @@ class ProcessFile {
     const rekResults = await this._rekognition.detectLabels(params).promise();
     console.log('Rekognition Response:', JSON.stringify(rekResults, null, 2));
 
-    if(rekResults.Labels.length > 0) {
+    if(rekResults && rekResults.Labels && rekResults.Labels.length > 0) {
 
       return {
-        labels: rekResults.Labels.map((label) => label.Name),
+        labels: rekResults.Labels
+          .filter((label) => label && label.Name)
+          .map((label) => label.Name || 'Unknown'),
       };
 
     } else {
@@ -97,22 +65,20 @@ class ProcessFile {
     }
   }
 
-  handler = async (event: ProcessFileEvent): Promise<ProcessFileResponse> => {
+  handler = async (event: SQSEvent): Promise<SQSBatchResponse> => {
     console.info('Received Event:', JSON.stringify(event));
 
-    const response : ProcessFileResponse = {
+    const response : SQSBatchResponse = {
       batchItemFailures: [],
     };
 
     const eventsToSend : aws.EventBridge.PutEventsRequestEntry[] = [];
 
     const analysisJobs = event.Records.map((record) => {
-      const recordBody : S3EventNotification = JSON.parse(record.body);
+      const recordBody : S3Event = JSON.parse(record.body);
 
       // Read only the first record, as the PutObject will only have one record
-      const s3Details = recordBody.Records[0].s3;
-
-      return this.processSingleFile(s3Details)
+      return this.processSingleFile(recordBody.Records[0])
         .then((processResult) => {
 
           if (processResult.labels.length > 0) {
@@ -148,5 +114,8 @@ class ProcessFile {
   };
 }
 
+// Initialise class outside of the handler so context is reused.
 const processFile = new ProcessFile();
-export const handler = async (event: ProcessFileEvent): Promise<ProcessFileResponse> => processFile.handler(event);
+
+// The handler simply executes the object handler
+export const handler = async (event: SQSEvent): Promise<SQSBatchResponse> => processFile.handler(event);
