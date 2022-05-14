@@ -39,7 +39,6 @@ class ProcessEmail {
     };
 
     const s3Object = await this._s3.getObject(objectBeingProcessed).promise();
-    console.log('S3 Response:', JSON.stringify(s3Object, null, 2));
 
     if(s3Object && s3Object.Body) {
 
@@ -52,29 +51,37 @@ class ProcessEmail {
         console.log('Processing attachment: ', parsed.attachments[i]);
 
         const key = `${this._attachmentPrefix}${dateString}_${i}.jpg`;
-        s3Jobs.push(this._s3.putObject({
-          Bucket: objectBeingProcessed.Bucket,
-          Key: key,
-          Body: parsed.attachments[i].content,
-        }));
+
+        const putJob = this._s3.putObject({
+            Bucket: objectBeingProcessed.Bucket,
+            Key: key,
+            Body: parsed.attachments[i].content,
+          }).promise().then((r) => console.log('Put Result:', key, r));
+
+        s3Jobs.push(putJob);
       }
 
-      s3Jobs.push(this._s3.copyObject({
-        Bucket: objectBeingProcessed.Bucket,
-        CopySource: objectBeingProcessed.Key,
-        Key: objectBeingProcessed.Key.replace(this._triggerPrefix, this._archivePrefix),
-      }));
+      const newKey = objectBeingProcessed.Key.replace(this._triggerPrefix, this._archivePrefix);
+      console.log('Copying ', objectBeingProcessed.Key, newKey);
 
-      await Promise.allSettled(s3Jobs);
+      const copyJob = this._s3.copyObject({
+          Bucket: objectBeingProcessed.Bucket,
+          CopySource: `${objectBeingProcessed.Bucket}/${objectBeingProcessed.Key}`,
+          Key: newKey,
+        }).promise().then((r) => console.log('Copy Result:', r));
+
+      s3Jobs.push(copyJob);
+
+      await Promise.all(s3Jobs);
 
       console.log('All S3 jobs ran, now deleting source email object');
 
-      await this._s3.deleteObject({
+      const deleteResult = await this._s3.deleteObject({
         Bucket: objectBeingProcessed.Bucket,
         Key: objectBeingProcessed.Key,
-      });
+      }).promise();
 
-      console.log('Object Deleted', objectBeingProcessed.Key);
+      console.log('Object Deleted', objectBeingProcessed.Key, deleteResult);
 
     } else {
       console.log('No email body to parse');

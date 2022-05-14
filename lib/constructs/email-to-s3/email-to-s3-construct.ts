@@ -55,7 +55,7 @@ export default class EmailToS3Construct extends Construct {
 
     lambdaProcessor.addToRolePolicy(new iam.PolicyStatement({
       resources: [`${props.bucket.bucketArn}/*`],
-      actions: ['s3:GetObject', 's3:GetObject', 's3:PutObject', 's3:DeleteObject'],
+      actions: ['s3:GetObject', 's3:CopyObject', 's3:PutObject', 's3:DeleteObject'],
     }));
 
     props.bucket.addEventNotification(s3.EventType.OBJECT_CREATED, new s3n.LambdaDestination(lambdaProcessor), {
