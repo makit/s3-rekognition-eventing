@@ -40,7 +40,7 @@ export default class ProcessFileConstruct extends Construct {
     }));
 
     // The lambda that processes the Rekognition calls and fires events
-    this.lambda = new lambdanode.NodejsFunction(this, 'processor', {
+    this.lambda = new lambdanode.NodejsFunction(this, 'lambda', {
       runtime: lambda.Runtime.NODEJS_16_X,
       environment: {
         MinConfidence: props.algorithmMinConfidence.toString(),

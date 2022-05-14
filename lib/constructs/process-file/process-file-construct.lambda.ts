@@ -77,6 +77,11 @@ class ProcessFile {
     const analysisJobs = event.Records.map((record) => {
       const recordBody : S3Event = JSON.parse(record.body);
 
+      // Handle S3 test events for example
+      if (!recordBody || !recordBody.Records || recordBody.Records.length === 0) {
+        return Promise.resolve();
+      }
+
       // Read only the first record, as the PutObject will only have one record
       return this.processSingleFile(recordBody.Records[0])
         .then((processResult) => {

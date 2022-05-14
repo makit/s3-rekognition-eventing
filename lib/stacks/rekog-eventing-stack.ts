@@ -9,11 +9,13 @@ import * as eventsources from 'aws-cdk-lib/aws-lambda-event-sources';
 import { Construct } from 'constructs';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import ProcessFileConstruct from '../constructs/process-file/process-file-construct';
+import EmailToS3Construct from '../constructs/email-to-s3/email-to-s3-construct';
 
 export interface RekogEventingStackProps extends StackProps {
   expireObjectsAfterXDays: number;
   algorithmMinConfidence: number;
   algorithmMaxLabels: number;
+  emailRecipient?: string;
 }
 
 export class RekogEventingStack extends Stack {
@@ -21,6 +23,7 @@ export class RekogEventingStack extends Stack {
     super(scope, id, props);
 
     const detailType = 'rekognition-analysed-image';
+    const attachmentPrefix = 'analyse/';
     
     const processQueue = new sqs.Queue(this, 'ProcessQueue');
 
@@ -28,7 +31,17 @@ export class RekogEventingStack extends Stack {
     const filesToProcessBucket = new s3.Bucket(this, 'FilesToProcessBucket', {
       lifecycleRules: [{ expiration: Duration.days(props.expireObjectsAfterXDays) }],
     });
-    filesToProcessBucket.addEventNotification(s3.EventType.OBJECT_CREATED, new s3n.SqsDestination(processQueue));
+    filesToProcessBucket.addEventNotification(s3.EventType.OBJECT_CREATED, new s3n.SqsDestination(processQueue), {
+      prefix: attachmentPrefix,
+    });
+
+    if (props.emailRecipient) {
+      new EmailToS3Construct(this, 'EmailToS3', {
+        bucket: filesToProcessBucket,
+        emailRecipient: props.emailRecipient,
+        attachmentPrefix,
+      });
+    }
 
     // Results from the analysis will be sent to this Bus
     const eventBus = new events.EventBus(this, 'Bus');
