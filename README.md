@@ -6,3 +6,7 @@ This project contains a [CDK](https://docs.aws.amazon.com/cd) application that b
 Snapshots of movement could be uploaded to S3 - or extracted from email attachments by [SES](https://aws.amazon.com/ses/) into S3 - and then depending on the objects that are detected it could send a Text Message, send an email, or do nothing. For example, a person detected could be a text and email. A dog could trigger an email only, and a bird could simply not notify at all.
 
 This can easily be expanded to store the images, along with labels into an archive for later quering with [Athena](https://aws.amazon.com/athena/) as well.
+
+## Diagram
+
+![Diagram](diagram.png)
