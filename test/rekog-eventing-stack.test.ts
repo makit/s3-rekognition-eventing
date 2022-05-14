@@ -1,7 +1,6 @@
 import * as cdk from 'aws-cdk-lib';
 import { RekogEventingStack } from '../lib/stacks/rekog-eventing-stack';
 import { Template } from 'aws-cdk-lib/assertions';
-// import * as Cdk from '../lib/cdk-stack';
 
 test('S3 Bucket Created With Configured Expiration', () => {
   const expireObjectsAfterXDays = 5;
