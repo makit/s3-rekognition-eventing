@@ -7,7 +7,7 @@ If SES is setup to [receive email](https://docs.aws.amazon.com/ses/latest/dg/rec
 ## Example Use Case
 Snapshots of movement could be uploaded to S3, or extracted from email attachments by [SES](https://aws.amazon.com/ses/), and then depending on the objects that are detected it could send a Text Message, send an Email, or do nothing. For example, a person detected could be a text and email. A dog could trigger an email only, and a bird could simply not notify at all.
 
-This can easily be expanded to store the images, along with labels into an archive for later quering with [Athena](https://aws.amazon.com/athena/) as well.
+This can easily be expanded to store the images, along with labels into an archive for later quering with [Athena](https://aws.amazon.com/athena/) as well. Could also have a lambda that builds and sends an email via SES with the images attached, along with the labels.
 
 ## Diagram
 
