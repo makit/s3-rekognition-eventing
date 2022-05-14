@@ -94,7 +94,5 @@ export class RekogEventingStack extends Stack {
       eventBus,
     });
     lowPriorityRule.addTarget(new targets.SnsTopic(lowPriorityTopic));
-
-    // Example: You could have a rule that hits a lambda to delete the image immediately
   }
 }

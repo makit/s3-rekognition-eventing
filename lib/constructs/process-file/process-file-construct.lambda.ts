@@ -2,6 +2,7 @@ import * as aws from 'aws-sdk';
 import { SQSEvent, S3Event, S3EventRecord, SQSBatchResponse } from 'aws-lambda';
 
 export interface FileResult {
+  objectKey: string;
   labels: string[];
 }
 
@@ -50,6 +51,7 @@ class ProcessFile {
     if(rekResults && rekResults.Labels && rekResults.Labels.length > 0) {
 
       return {
+        objectKey: record.s3.object.key,
         labels: rekResults.Labels
           .filter((label) => label && label.Name)
           .map((label) => label.Name || 'Unknown'),
@@ -60,6 +62,7 @@ class ProcessFile {
       console.log('No labels returned for image');
 
       return {
+        objectKey: record.s3.object.key,
         labels: [],
       };
     }
